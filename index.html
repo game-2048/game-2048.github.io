@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+      <script src="https://unpkg.com/react@15/dist/react.min.js"></script>
+      <script src="https://unpkg.com/react-dom@15/dist/react-dom.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.24.0/babel.js"></script>
+
+      <title>2048</title>
+</head>
+<body>
+      <div id = "root"></div>
+      <script type = "text/babel">
+            function Cell(props) {
+                  let cellColor = 'white';
+                  if(props.cell != 0) {
+                        if(props.cell == 2) {
+                              cellColor = '#34a853';
+                        }
+                        else if(props.cell == 4) {
+                              cellColor = '#3ccfcf';
+                        }
+                        else if(props.cell == 8) {
+                              cellColor = '#ea4335';
+                        }
+                        else if(props.cell == 16) {
+                              cellColor = '#fbbc05';
+                        }
+                        else if(props.cell == 32) {
+                              cellColor = '#1389fd';
+                        }
+                        else if(props.cell == 64) {
+                              cellColor = '#7a58fc';
+                        }
+                        else if(props.cell == 128) {
+                              cellColor = '#f47100';
+                        }
+                        else if(props.cell == 256) {
+                              cellColor = '#90ee02';
+                        }
+                        else if(props.cell == 512) {
+                              cellColor = '#ee6e73';
+                        }
+                        else if(props.cell == 1024) {
+                              cellColor = '#4285f4';
+                        }
+                        else if(props.cell == 2048) {
+                              cellColor = '#414141';
+                        }
+                  }
+
+                  const Style = {
+                        width: 100,
+                        height: 100,
+                        borderRadius: 4,
+                        margin: 16,
+                        backgroundColor: cellColor,
+                        color: 'white',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        fontFamily: 'verdana'
+                  }
+                  if(cellColor != 'white') {
+                        Style.boxShadow = '1px 1px 32px 0 rgba(0,0,0,0.25)';
+                  }
+                  if(props.cell == 2048) {
+                        props.gameWon();
+                  }
+                  return (
+                        <div style = {Style}>
+                              <h1>{props.cell == 0?"":props.cell}</h1>
+                        </div>
+                  )
+            }
+
+            function Row(props) {
+                  const Style = {
+                        display: 'flex'
+                  }
+
+                  let cells = [];
+                  for(let i=0 ; i<4 ; i++) {
+                        cells.push(<Cell cell = {props.cells[i]} gameWon = {props.gameWon}/>);
+                  }
+
+                  return (
+                        <div style = {Style}>
+                              {cells}
+                        </div>
+                  )
+            }
+
+            function Board(props) {
+                  const Style = {
+                        backgroundColor: '#ededed',
+                        padding: 16,
+                        display: 'inline-block',
+                        gridRow: '1/3'
+                  }
+
+                  let rows = [];
+                  for(let i=0 ; i<4 ; i++) {
+                        rows.push(<Row cells = {props.cells[i]} gameWon = {props.gameWon}/>);
+                  }
+
+                  if(props.gameStatus == 1) {
+                        const BannerStyle = {
+                              position: 'absolute',
+                              top: 8,
+                              left: 8,
+                              width: 560,
+                              height: 560,
+                              backgroundColor: 'rgba(255,255,255,0.7)',
+                              fontSize: 36,
+                              color: '#414141',
+                              display: 'flex',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              fontFamily: 'verdana'
+                        }
+                        let t = <div style = {BannerStyle}>You Won!</div>;
+                        rows.push(t);
+                  }
+                  else if(props.gameStatus == 2) {
+                        const BannerStyle = {
+                              position: 'absolute',
+                              top: 8,
+                              left: 8,
+                              width: 560,
+                              height: 560,
+                              backgroundColor: 'rgba(255,255,255,0.7)',
+                              fontSize: 36,
+                              color: '#414141',
+                              display: 'flex',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              fontFamily: 'verdana'
+                        }
+                        let t = <div style = {BannerStyle}>Game Over!</div>;
+                        rows.push(t);
+                  }
+
+                  return (
+                        <div style = {Style}>
+                              {rows}
+                        </div>
+                  )
+            }
+
+            function ScoreCard(props) {
+                  const Style = {
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr',
+                        justifySelf: 'center',
+                        alignSelf: 'center',
+                        boxShadow: '2px 2px 16px 0 rgba(0,0,0,0.15)',
+                        borderRadius: 8
+                  }
+                  const TextStyle = {
+                        color: 'white',
+                        fontFamily: 'verdana',
+                        backgroundColor: '#7a58fc',
+                        padding: 16,
+                        borderRadius: '8px 0px 0px 8px',
+                        fontSize: 16
+                  }
+                  const ScoreStyle = {
+                        color: '#7a58fc',
+                        backgroundColor: 'white',
+                        fontFamily: 'verdana',
+                        padding: 16,
+                        borderRadius: '0px 8px 8px 0px',
+                        fontSize: 16,
+                        border: '2px solid #7a58fc'
+                  }
+                  return (
+                        <div style = {Style}>
+                              <div style = {TextStyle}>
+                                    Score:
+                              </div>
+                              <div style = {ScoreStyle}>
+                                    {props.score}
+                              </div>
+                        </div>
+                  );
+            }
+
+            class App extends React.Component {
+                  constructor(props) {
+                        super(props);
+
+                        this.initState = this.initState.bind(this);
+                        this.state = {
+                              cells: this.initState(),
+                              gameOver: false,
+                              gameStatus: 0,
+                              score: 0
+                        };
+
+                        this.move = this.move.bind(this);
+                        document.onkeydown = this.move;
+
+                        this.leftMove = this.leftMove.bind(this);
+                        this.upMove = this.upMove.bind(this);
+                        this.rightMove = this.rightMove.bind(this);
+                        this.downMove = this.downMove.bind(this);
+
+                        this.getPosition = this.getPosition.bind(this);
+
+                        this.restart = this.restart.bind(this);
+                        this.isGameOver = this.isGameOver.bind(this);
+                        this.gameWon = this.gameWon.bind(this);
+                  }
+
+                  move(event) {
+                        console.log("I am Working");
+                        if(this.state.gameOver) {
+                              return null;
+                        }
+                        let code = event.keyCode;
+                        if(code == 37) {
+                              this.leftMove();
+                        }
+                        else if(code == 38) {
+                              this.upMove();
+                        }
+                        else if(code == 39) {
+                              this.rightMove();
+                        }
+                        else if(code == 40) {
+                              this.downMove();
+                        }
+                  }
+
+                  initState() {
+                        let cellsCopy = [];
+                        for(let i=0 ; i<4 ; i++) {
+                              cellsCopy.push(new Array(4).fill(0));
+                        }
+
+                        let x = Math.floor(Math.random() * 4);
+                        let y = Math.floor(Math.random() * 4);
+                        let val = this.giveRandom();
+                        cellsCopy[x][y] = val;
+
+                        x = Math.floor(Math.random() * 4);
+                        y = Math.floor(Math.random() * 4);
+                        val = this.giveRandom();
+                        cellsCopy[x][y] = val;
+                        console.log(cellsCopy);
+                        return cellsCopy;
+                  }
+
+                  isGameOver() {
+                        for(let i=0 ; i<4 ; i++) {
+                              for(let j=0 ; j<3 ; j++) {
+                                    if(this.state.cells[i][j] == this.state.cells[i][j+1]) {
+                                          return false;
+                                    }
+                              }
+                        }
+
+                        for(let i=0 ; i<4 ; i++) {
+                              for(let j=0 ; j<3 ; j++) {
+                                    if(this.state.cells[j][i] == this.state.cells[j+1][i]) {
+                                          return false;
+                                    }
+                              }
+                        }
+
+                        return true;
+                  }
+
+                  gameWon() {
+                        this.setState({gameOver: true, gameStatus: 1});
+                        console.log("Game won");
+                  }
+
+                  restart() {
+                        this.setState({cells: this.initState(), gameOver: false, gameStatus: 0, score: 0});
+                  }
+
+                  giveRandom() {
+                        let num = Math.floor(Math.random() * 2);
+                        num = (num+1)*2;
+                        return num;
+                  }
+
+                  getPosition(occupied) {
+                        let pos = 4;
+                        if(occupied[0] == true && occupied[1] == true && occupied[2] == true && occupied[3] == true) {
+                              if(this.isGameOver()) {
+                                    this.setState({gameOver: true, gameStatus: 2});
+                                    console.log("Game Over");
+                              }
+                        }
+                        else {
+                              while(true) {
+                                    let obNum = Math.floor(Math.random() * 4);
+                                    if(occupied[obNum] == false) {
+                                          pos = obNum;
+                                          break;
+                                    }
+                              }
+                        }
+                        return pos;
+                  }
+
+                  leftMove() {
+                        console.log("left move Called");
+                        let tempScore = 0;
+                        let cellsCopy = [];
+                        for(let i=0 ; i<4 ; i++) {
+                              cellsCopy.push(this.state.cells[i].slice());
+                        }
+
+                        for(let i=0 ; i<4 ; i++) {
+                              if(!(cellsCopy[i][0] == 0 && cellsCopy[i][1] == 0 && cellsCopy[i][2] == 0 && cellsCopy[i][3] == 0)) {
+                                    let z = 0;
+                                    for(let j=0 ; j<4 ; j++) {
+                                          if(cellsCopy[i][j] != 0) {
+                                                z = j;
+                                                break;
+                                          }
+                                    }
+                                    for(let j=0 ; j<4 ; j++) {
+                                          if(z != 4) {
+                                                if(cellsCopy[i][z] != 0) {
+                                                      cellsCopy[i][j] = cellsCopy[i][z];
+                                                }
+                                                else {
+                                                      j--;
+                                                }
+                                                z++;
+                                          }
+                                          else {
+                                                cellsCopy[i][j] = 0;
+                                          }
+                                    }
+
+                                    let stArr = [false, false, false, false];
+                                    for(let j=0 ; j<3 ; j++) {
+                                          if(cellsCopy[i][j] != 0) {
+                                                if(cellsCopy[i][j] == cellsCopy[i][j+1]) {
+                                                      cellsCopy[i][j] *= 2;
+                                                      tempScore += cellsCopy[i][j];
+                                                      stArr[j] = true;
+                                                      stArr[j+1] = true;
+                                                      j++;
+                                                }
+                                          }
+                                    }
+
+                                    z = 0;
+                                    for(let j=0 ; j<4 ; j++) {
+                                          if(z != 4) {
+                                                cellsCopy[i][j] = cellsCopy[i][z];
+                                                if(stArr[z] == true) {
+                                                      z++;
+                                                }
+                                                z++;
+                                          }
+                                          else {
+                                                cellsCopy[i][j] = 0;
+                                          }
+                                    }
+                              }
+                        }
+                        let occupied = [];
+                        for(let i=0 ; i<4 ; i++) {
+                              if(cellsCopy[i][3] == 0) {
+                                    occupied.push(false);
+                              }
+                              else {
+                                    occupied.push(true);
+                              }
+                        }
+                        let pos = this.getPosition(occupied);
+                        cellsCopy[pos][3] = this.giveRandom();
+
+                        this.setState({cells: cellsCopy, score: this.state.score + tempScore});
+                  }
+
+                  upMove() {
+                        console.log("up move Called");
+                        let tempScore = 0;
+                        let cellsCopy = [];
+                        for(let i=0 ; i<4 ; i++) {
+                              cellsCopy.push(this.state.cells[i].slice());
+                        }
+
+                        for(let i=0 ; i<4 ; i++) {
+                              if(!(cellsCopy[0][i] == 0 && cellsCopy[1][i] == 0 && cellsCopy[2][i] == 0 && cellsCopy[3][i] == 0)) {
+                                    let z = 0;
+                                    for(let j=0 ; j<4 ; j++) {
+                                          if(cellsCopy[j][i] != 0) {
+                                                z = j;
+                                                break;
+                                          }
+                                    }
+                                    for(let j=0 ; j<4 ; j++) {
+                                          if(z != 4) {
+                                                if(cellsCopy[z][i] != 0) {
+                                                      cellsCopy[j][i] = cellsCopy[z][i];
+                                                }
+                                                else {
+                                                      j--;
+                                                }
+                                                z++;
+                                          }
+                                          else {
+                                                cellsCopy[j][i] = 0;
+                                          }
+                                    }
+
+                                    let stArr = [false, false, false, false];
+                                    for(let j=0 ; j<3 ; j++) {
+                                          if(cellsCopy[j][i] != 0) {
+                                                if(cellsCopy[j][i] == cellsCopy[j+1][i]) {
+                                                      cellsCopy[j][i] *= 2;
+                                                      tempScore += cellsCopy[j][i];
+                                                      stArr[j] = true;
+                                                      stArr[j+1] = true;
+                                                      j++;
+                                                }
+                                          }
+                                    }
+
+                                    z = 0;
+                                    for(let j=0 ; j<4 ; j++) {
+                                          if(z != 4) {
+                                                cellsCopy[j][i] = cellsCopy[z][i];
+                                                if(stArr[z] == true) {
+                                                      z++;
+                                                }
+                                                z++;
+                                          }
+                                          else {
+                                                cellsCopy[j][i] = 0;
+                                          }
+                                    }
+                              }
+                        }
+                        let occupied = [];
+                        for(let i=0 ; i<4 ; i++) {
+                              if(cellsCopy[3][i] == 0) {
+                                    occupied.push(false);
+                              }
+                              else {
+                                    occupied.push(true);
+                              }
+                        }
+                        let pos = this.getPosition(occupied);
+                        cellsCopy[3][pos] = this.giveRandom();
+
+                        this.setState({cells: cellsCopy, score: this.state.score + tempScore});
+                  }
+
+                  rightMove() {
+                        console.log("right move Called");
+                        let tempScore = 0;
+                        let cellsCopy = [];
+                        for(let i=0 ; i<4 ; i++) {
+                              cellsCopy.push(this.state.cells[i].slice());
+                        }
+
+                        for(let i=0 ; i<4 ; i++) {
+                              if(!(cellsCopy[i][0] == 0 && cellsCopy[i][1] == 0 && cellsCopy[i][2] == 0 && cellsCopy[i][3] == 0)) {
+                                    let z = 3;
+                                    for(let j=3 ; j>=0 ; j--) {
+                                          if(cellsCopy[i][j] != 0) {
+                                                z = j;
+                                                break;
+                                          }
+                                    }
+                                    for(let j=3 ; j>=0 ; j--) {
+                                          if(z != -1) {
+                                                if(cellsCopy[i][z] != 0) {
+                                                      cellsCopy[i][j] = cellsCopy[i][z];
+                                                }
+                                                else {
+                                                      j++;
+                                                }
+                                                z--;
+                                          }
+                                          else {
+                                                cellsCopy[i][j] = 0;
+                                          }
+                                    }
+
+                                    let stArr = [false, false, false, false];
+                                    for(let j=3 ; j>0 ; j--) {
+                                          if(cellsCopy[i][j] != 0) {
+                                                if(cellsCopy[i][j] == cellsCopy[i][j-1]) {
+                                                      cellsCopy[i][j] *= 2;
+                                                      tempScore += cellsCopy[i][j];
+                                                      stArr[j] = true;
+                                                      stArr[j-1] = true;
+                                                      j--;
+                                                }
+                                          }
+                                    }
+
+                                    z = 3;
+                                    for(let j=3 ; j>=0 ; j--) {
+                                          if(z != -1) {
+                                                cellsCopy[i][j] = cellsCopy[i][z];
+                                                if(stArr[z] == true) {
+                                                      z--;
+                                                }
+                                                z--;
+                                          }
+                                          else {
+                                                cellsCopy[i][j] = 0;
+                                          }
+                                    }
+                              }
+                        }
+                        let occupied = [];
+                        for(let i=0 ; i<4 ; i++) {
+                              if(cellsCopy[i][0] == 0) {
+                                    occupied.push(false);
+                              }
+                              else {
+                                    occupied.push(true);
+                              }
+                        }
+                        let pos = this.getPosition(occupied);
+                        cellsCopy[pos][0] = this.giveRandom();
+
+                        this.setState({cells: cellsCopy, score: this.state.score + tempScore});
+                  }
+
+                  downMove() {
+                        console.log("down move Called");
+                        let tempScore = 0;
+                        let cellsCopy = [];
+                        for(let i=0 ; i<4 ; i++) {
+                              cellsCopy.push(this.state.cells[i].slice());
+                        }
+
+                        for(let i=0 ; i<4 ; i++) {
+                              if(!(cellsCopy[0][i] == 0 && cellsCopy[1][i] == 0 && cellsCopy[2][i] == 0 && cellsCopy[3][i] == 0)) {
+                                    let z = 3;
+                                    for(let j=3 ; j>=0 ; j--) {
+                                          if(cellsCopy[j][i] != 0) {
+                                                z = j;
+                                                break;
+                                          }
+                                    }
+                                    for(let j=3 ; j>=0 ; j--) {
+                                          if(z != -1) {
+                                                if(cellsCopy[z][i] != 0) {
+                                                      cellsCopy[j][i] = cellsCopy[z][i];
+                                                }
+                                                else {
+                                                      j++;
+                                                }
+                                                z--;
+                                          }
+                                          else {
+                                                cellsCopy[j][i] = 0;
+                                          }
+                                    }
+
+                                    let stArr = [false, false, false, false];
+                                    for(let j=3 ; j>0 ; j--) {
+                                          if(cellsCopy[j][i] != 0) {
+                                                if(cellsCopy[j][i] == cellsCopy[j-1][i]) {
+                                                      cellsCopy[j][i] *= 2;
+                                                      tempScore += cellsCopy[j][i];
+                                                      stArr[j] = true;
+                                                      stArr[j-1] = true;
+                                                      j--;
+                                                }
+                                          }
+                                    }
+
+                                    z = 3;
+                                    for(let j=3 ; j>=0 ; j--) {
+                                          if(z != -1) {
+                                                cellsCopy[j][i] = cellsCopy[z][i];
+                                                if(stArr[z] == true) {
+                                                      z--;
+                                                }
+                                                z--;
+                                          }
+                                          else {
+                                                cellsCopy[j][i] = 0;
+                                          }
+                                    }
+                              }
+                        }
+                        let occupied = [];
+                        for(let i=0 ; i<4 ; i++) {
+                              if(cellsCopy[0][i] == 0) {
+                                    occupied.push(false);
+                              }
+                              else {
+                                    occupied.push(true);
+                              }
+                        }
+                        let pos = this.getPosition(occupied);
+                        cellsCopy[0][pos] = this.giveRandom();
+
+                        this.setState({cells: cellsCopy, score: this.state.score + tempScore});
+                  }
+
+                  render() {
+                        const Style = {
+                              display: 'inline-grid',
+                              gridTemplateColumns: '1fr 1fr'
+                        }
+                        const ButtonStyle = {
+                              display: 'inline',
+                              alignSelf: 'center',
+                              justifySelf: 'center',
+                              color: 'white',
+                              backgroundColor: '#7a58fc',
+                              border: 'none',
+                              outline: 'none',
+                              borderRadius: 8,
+                              padding: 16,
+                              margin: 8,
+                              fontSize: 16,
+                              boxShadow: '2px 2px 16px 0 rgba(0,0,0,0.15)'
+                        }
+                        return (
+                              <div style = {Style}>
+                                    <Board cells = {this.state.cells} gameStatus = {this.state.gameStatus} gameWon = {this.gameWon}/>
+                                    <ScoreCard score = {this.state.score}/>
+                                    <button onClick = {this.restart} style = {ButtonStyle}>Restart</button>
+                              </div>
+                        )
+                  }
+            }
+
+            ReactDOM.render(
+                  <App/>,
+                  document.querySelector('#root')
+            );
+      </script>
+</body>
+</html>
